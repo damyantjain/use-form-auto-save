@@ -1,0 +1,23 @@
+{
+  "name": "use-form-auto-save",
+  "version": "1.0.0",
+  "description": "A React hook for automatically saving and restoring form data.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/damyantjain/use-form-auto-save.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/damyantjain/use-form-auto-save/issues"
+  },
+  "homepage": "https://github.com/damyantjain/use-form-auto-save#readme",
+  "devDependencies": {
+    "typescript": "^5.8.2"
+  }
+}
