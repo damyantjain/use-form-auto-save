@@ -1,5 +1,8 @@
 import { useEffect } from 'react';
 /**
+ * Basic version of useFormAutoSave hook.
+ * Automatically saves form data to localStorage.
+ * Restores saved data on component mount.
  *
  * @param formData - The form state to be saved.
  * @param formKey - Unique key to identify saved form data.
