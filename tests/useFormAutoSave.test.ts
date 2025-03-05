@@ -36,5 +36,20 @@ describe("useFormAutoSave Hook", () => {
         expect(localStorage.getItem("test-form")).toBe(JSON.stringify({ name: "Bob" }));
         
     });
+
+    it("should restore saved data from localStorage", () => {
+        localStorage.setItem("test-form", JSON.stringify({ email: "test@example.com" }));
+        const { result } = renderHook(() => useFormAutoSave({}, "test-form"));
+        expect(result.current.restoreFormData()).toEqual({ email: "test@example.com" });
+    });
     
+    it("should not save when form data is empty", () => {
+        renderHook(() => useFormAutoSave({}, "empty-form"));
+  
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
+  
+        expect(localStorage.getItem("empty-form")).toBeNull();
+    });
 });

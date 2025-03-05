@@ -12,6 +12,8 @@ export const useFormAutoSave = (formData: object, formKey: string, debounceTime 
   useEffect(() => {
     if (!formData || !formKey) return;
 
+    if (Object.keys(formData).length === 0) return;
+
     const handler = setTimeout(() => {
       localStorage.setItem(formKey, JSON.stringify(formData));
     }, debounceTime);
