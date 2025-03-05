@@ -52,4 +52,28 @@ describe("useFormAutoSave Hook", () => {
   
         expect(localStorage.getItem("empty-form")).toBeNull();
     });
+
+    it("should save form data to sessionStorage when specified", () => {
+        const { rerender } = renderHook(
+          ({ data }) => useFormAutoSave(data, "test-session", 1000, "sessionStorage"),
+          { initialProps: { data: { username: "test_user" } } }
+        );
+      
+        expect(sessionStorage.getItem("test-session")).toBeNull(); // Should not save immediately
+      
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
+      
+        expect(sessionStorage.getItem("test-session")).toBe(JSON.stringify({ username: "test_user" }));
+      
+        rerender({ data: { username: "updated_user" } });
+      
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
+      
+        expect(sessionStorage.getItem("test-session")).toBe(JSON.stringify({ username: "updated_user" }));
+      });
+      
 });

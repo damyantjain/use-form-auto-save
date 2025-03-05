@@ -3,7 +3,7 @@ import { useFormAutoSave } from "../src/useFormAutoSave";
 
 export const AutoSaveExample = () => {
   const [formData, setFormData] = useState({ name: "", email: "" });
-  const { restoreFormData } = useFormAutoSave(formData, "user-form");
+  const { restoreFormData } = useFormAutoSave(formData, "user-form", 1000, "sessionStorage");
 
   useEffect(() => {
     const savedData = restoreFormData();
@@ -12,7 +12,7 @@ export const AutoSaveExample = () => {
 
   return (
     <div>
-      <h2>Auto-Saving Form</h2>
+      <h2>Auto-Saving Form (Session Storage)</h2>
       <input
         type="text"
         placeholder="Name"
@@ -25,7 +25,7 @@ export const AutoSaveExample = () => {
         value={formData.email}
         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
       />
-      <p>Data is savead after debounce time of 1 second</p>
+      <p>Data is automatically saved every second to <b>sessionStorage</b>.</p>
     </div>
   );
 };
