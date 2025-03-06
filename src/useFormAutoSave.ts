@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 
-type StorageType = "localStorage" | "sessionStorage";
+type StorageType = "localStorage" | "sessionStorage" | "api";
+
+type SaveFunction = (formData: object) => Promise<void>;
 
 /**
  * Basic version of useFormAutoSave hook.
@@ -16,22 +18,34 @@ export const useFormAutoSave = (
   formData: object,
   formKey: string,
   debounceTime = 1000,
-  storageType: StorageType = "localStorage"
+  storageType: StorageType = "localStorage",
+  saveFunction?: SaveFunction
 ) => {
   useEffect(() => {
     if (!formData || !formKey) return;
-
     if (Object.keys(formData).length === 0) return;
 
-    const handler = setTimeout(() => {
-      const storage = storageType === "localStorage" ? localStorage : sessionStorage;
-      storage.setItem(formKey, JSON.stringify(formData));
+    const handler = setTimeout(async () => {
+      try {
+        if (storageType === "api" && saveFunction) {
+          await saveFunction(formData);
+        } else {
+          const storage = storageType === "localStorage" ? localStorage : sessionStorage;
+          storage.setItem(formKey, JSON.stringify(formData));
+        }
+      } catch (error) {
+        console.error("Auto-save error:", error);
+      }
     }, debounceTime);
 
     return () => clearTimeout(handler);
-  }, [formData, formKey, debounceTime, storageType]);
+  }, [formData, formKey, debounceTime, storageType, saveFunction]);
 
   const restoreFormData = () => {
+    if (storageType === "api") {
+      console.warn("Restore functionality is not available for API storage.");
+      return null;
+    }
     const storage = storageType === "localStorage" ? localStorage : sessionStorage;
     const savedData = storage.getItem(formKey);
     return savedData ? JSON.parse(savedData) : null;
