@@ -4,6 +4,8 @@ type StorageType = "localStorage" | "sessionStorage" | "api";
 
 type SaveFunction = (formData: object) => Promise<void>;
 
+type ErrorCallback = (error: any) => void;
+
 /**
  * Basic version of useFormAutoSave hook.
  * Automatically saves form data to localStorage.
@@ -19,7 +21,8 @@ export const useFormAutoSave = (
   formKey: string,
   debounceTime = 1000,
   storageType: StorageType = "localStorage",
-  saveFunction?: SaveFunction
+  saveFunction?: SaveFunction,
+  onError?: ErrorCallback
 ) => {
   useEffect(() => {
     if (!formData || !formKey) return;
@@ -35,6 +38,7 @@ export const useFormAutoSave = (
         }
       } catch (error) {
         console.error("Auto-save error:", error);
+        if (onError) onError(error);
       }
     }, debounceTime);
 
