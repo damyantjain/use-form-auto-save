@@ -26,7 +26,6 @@ describe("useFormAutoSave Hook", () => {
       
         expect(localStorage.getItem("test-form")).toBe(JSON.stringify({ name: "Alice" }));
       
-        // Update form data
         rerender({ data: { name: "Bob" } });
       
         act(() => {
@@ -59,7 +58,7 @@ describe("useFormAutoSave Hook", () => {
           { initialProps: { data: { username: "test_user" } } }
         );
       
-        expect(sessionStorage.getItem("test-session")).toBeNull(); // Should not save immediately
+        expect(sessionStorage.getItem("test-session")).toBeNull(); 
       
         act(() => {
           jest.advanceTimersByTime(1000);
