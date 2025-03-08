@@ -1,10 +1,10 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { AutoSaveExample } from "./examples/AutoSaveExample";
+import { AutoSaveApiExample } from "./examples/AutoSaveApiExample";
 
 const root = ReactDOM.createRoot(document.getElementById("root")!);
 root.render(
   <React.StrictMode>
-    <AutoSaveExample />
+    <AutoSaveApiExample />
   </React.StrictMode>
 );
