@@ -26,7 +26,6 @@ describe("useFormAutoSave Hook", () => {
       
         expect(localStorage.getItem("test-form")).toBe(JSON.stringify({ name: "Alice" }));
       
-        // Update form data
         rerender({ data: { name: "Bob" } });
       
         act(() => {
@@ -59,7 +58,7 @@ describe("useFormAutoSave Hook", () => {
           { initialProps: { data: { username: "test_user" } } }
         );
       
-        expect(sessionStorage.getItem("test-session")).toBeNull(); // Should not save immediately
+        expect(sessionStorage.getItem("test-session")).toBeNull(); 
       
         act(() => {
           jest.advanceTimersByTime(1000);
@@ -75,5 +74,30 @@ describe("useFormAutoSave Hook", () => {
       
         expect(sessionStorage.getItem("test-session")).toBe(JSON.stringify({ username: "updated_user" }));
       });
+      it("should call the API save function when storageType is 'api'", async () => {
+        const mockApiSave = jest.fn().mockResolvedValue(undefined);
       
+        const { rerender } = renderHook(
+          ({ data }) => useFormAutoSave(data, "test-api", 1000, "api", mockApiSave),
+          { initialProps: { data: { username: "test_user" } } }
+        );
+      
+        expect(mockApiSave).not.toHaveBeenCalled();
+      
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
+      
+        expect(mockApiSave).toHaveBeenCalledTimes(1);
+        expect(mockApiSave).toHaveBeenCalledWith({ username: "test_user" });
+      
+        rerender({ data: { username: "updated_user" } });
+      
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
+      
+        expect(mockApiSave).toHaveBeenCalledTimes(2);
+        expect(mockApiSave).toHaveBeenCalledWith({ username: "updated_user" });
+      });      
 });
