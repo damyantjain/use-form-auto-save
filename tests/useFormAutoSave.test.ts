@@ -92,5 +92,13 @@ describe("useFormAutoSave Hook", () => {
         expect(mockApiSave).toHaveBeenCalledTimes(1);
         expect(mockApiSave).toHaveBeenCalledWith({ username: "test_user" });
       
+        rerender({ data: { username: "updated_user" } });
+      
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
+      
+        expect(mockApiSave).toHaveBeenCalledTimes(2);
+        expect(mockApiSave).toHaveBeenCalledWith({ username: "updated_user" });
       });      
 });
