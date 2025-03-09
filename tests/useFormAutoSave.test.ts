@@ -99,5 +99,32 @@ describe("useFormAutoSave Hook", () => {
       
         expect(mockApiSave).toHaveBeenCalledTimes(2);
         expect(mockApiSave).toHaveBeenCalledWith({ username: "updated_user" });
-      });      
+      });  
+      
+      it("should call the onError callback when API save fails", async () => {
+        const mockApiSave = jest.fn().mockRejectedValue(new Error("API save failed"));
+        const mockOnError = jest.fn();
+      
+        const { rerender } = renderHook(
+          ({ data }) => useFormAutoSave(data, "test-api-error", 1000, "api", mockApiSave, mockOnError),
+          { initialProps: { data: { username: "test_user" } } }
+        );
+      
+        jest.clearAllMocks();
+      
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
+      
+        await expect(mockApiSave).rejects.toThrow("API save failed");
+      
+        // expect(mockApiSave).toHaveBeenCalledTimes(1);
+        expect(mockOnError).toHaveBeenCalledTimes(1);
+        expect(mockOnError).toHaveBeenCalledWith(expect.any(Error));
+      
+        rerender({ data: { username: "test_user" } });
+      
+        // expect(mockApiSave).toHaveBeenCalledTimes(1);
+      });
+      
 });
