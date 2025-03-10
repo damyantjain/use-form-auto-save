@@ -25,6 +25,8 @@ export const useFormAutoSave = (
   onError?: ErrorCallback
 ) => {
   const [lastSavedData, setLastSavedData] = useState<object | null>(null);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+
 
   useEffect(() => {
     if (!formData || !formKey) return;
@@ -37,6 +39,7 @@ export const useFormAutoSave = (
 
     const handler = setTimeout(async () => {
       try {
+        setIsSaving(true);
         if (storageType === "api" && saveFunction) {
           await saveFunction(formData);
         } else {
@@ -47,6 +50,8 @@ export const useFormAutoSave = (
       } catch (error) {
         console.error("Auto-save error:", error);
         if (onError) onError(error);
+      } finally {
+        setIsSaving(false);
       }
     }, debounceTime);
 
@@ -63,5 +68,5 @@ export const useFormAutoSave = (
     return savedData ? JSON.parse(savedData) : null;
   };
 
-  return { restoreFormData };
+  return { restoreFormData, isSaving };
 };
