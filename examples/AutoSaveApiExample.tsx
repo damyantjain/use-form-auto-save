@@ -1,33 +1,24 @@
 import React, { useState } from "react";
 import { useFormAutoSave } from "../src/useFormAutoSave";
 
-const fakeApiSaveWithError = async (formData: object) => {
-  return new Promise<void>((resolve, reject) => {
+const fakeApiSave = async (formData: object) => {
+  return new Promise<void>((resolve) => {
     console.log("Saving to API:", formData);
     setTimeout(() => {
-      if (Math.random() < 0.3) {
-        console.error("API Save Failed!");
-        reject(new Error("API save failed"));
-      } else {
-        console.log("API Save Successful!");
-        resolve();
-      }
-    }, 1000);
+      console.log("API Save Successful!");
+      resolve();
+    }, 2000);
   });
-};
-
-const handleError = (error: any) => {
-  alert("Error saving form: " + error.message);
 };
 
 export const AutoSaveApiExample = () => {
   const [formData, setFormData] = useState({ name: "", email: "" });
 
-  useFormAutoSave(formData, "user-api-form", 2000, "api", fakeApiSaveWithError, handleError);
+  const { isSaving } = useFormAutoSave(formData, "user-api-form", 2000, "api", fakeApiSave);
 
   return (
     <div>
-      <h2>Auto-Saving Form (API Mode)</h2>
+      <h2>Auto-Saving Form</h2>
       <input
         type="text"
         placeholder="Name"
@@ -40,7 +31,7 @@ export const AutoSaveApiExample = () => {
         value={formData.email}
         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
       />
-      <p>Data is automatically saved to the API every 2 seconds.</p>
+      <p>{isSaving ? "Saving..." : "Changes saved."}</p>
     </div>
   );
 };
