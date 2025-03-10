@@ -134,6 +134,48 @@ describe("useFormAutoSave Hook", () => {
       
         expect(mockApiSave).toHaveBeenCalledTimes(1);
       });
+      it("should call the API save function only when form data changes", async () => {
+        const mockApiSave = jest.fn().mockResolvedValue(undefined);
+        const mockOnError = jest.fn();
+      
+        const { rerender } = renderHook(
+          ({ data }) => useFormAutoSave(data, "test-api-change", 1000, "api", mockApiSave, mockOnError),
+          { initialProps: { data: { username: "test_user" } } }
+        );
+      
+        await act(async () => {
+          jest.advanceTimersByTime(1000);
+        });
+      
+        expect(mockApiSave).toHaveBeenCalledTimes(1);
+      
+        // Scenario 1: Re-render with SAME data (should NOT call API again)
+        rerender({ data: { username: "test_user" } });
+      
+        await act(async () => {
+          jest.advanceTimersByTime(1000);
+        });
+      
+        expect(mockApiSave).toHaveBeenCalledTimes(1);
+      
+        // Scenario 2: Re-render with UPDATED data (should trigger API call)
+        rerender({ data: { username: "updated_user" } });
+      
+        await act(async () => {
+          jest.advanceTimersByTime(1000);
+        });
+      
+        expect(mockApiSave).toHaveBeenCalledTimes(2); 
+      
+        // 🔹 Scenario 3: Re-render with previous data (should NOT call API again)
+        rerender({ data: { username: "updated_user" } });
+      
+        await act(async () => {
+          jest.advanceTimersByTime(1000);
+        });
+      
+        expect(mockApiSave).toHaveBeenCalledTimes(2);
+      });
       
       
 });
