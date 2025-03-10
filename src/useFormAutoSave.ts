@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 type StorageType = "localStorage" | "sessionStorage" | "api";
 
@@ -24,9 +24,16 @@ export const useFormAutoSave = (
   saveFunction?: SaveFunction,
   onError?: ErrorCallback
 ) => {
+  const [lastSavedData, setLastSavedData] = useState<object | null>(null);
+
   useEffect(() => {
     if (!formData || !formKey) return;
     if (Object.keys(formData).length === 0) return;
+
+    if (lastSavedData && JSON.stringify(lastSavedData) === JSON.stringify(formData)) {
+      console.log("Skipping save: No changes detected.");
+      return;
+    }
 
     const handler = setTimeout(async () => {
       try {
@@ -36,6 +43,7 @@ export const useFormAutoSave = (
           const storage = storageType === "localStorage" ? localStorage : sessionStorage;
           storage.setItem(formKey, JSON.stringify(formData));
         }
+        setLastSavedData(formData);
       } catch (error) {
         console.error("Auto-save error:", error);
         if (onError) onError(error);
