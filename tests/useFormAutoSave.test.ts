@@ -11,6 +11,7 @@ describe("useFormAutoSave Hook", () => {
         jest.runOnlyPendingTimers();
         jest.useRealTimers();
     });
+    
 
     it("should save form data to localStorage after debounce", () => {
         const { rerender } = renderHook(
@@ -167,7 +168,7 @@ describe("useFormAutoSave Hook", () => {
       
         expect(mockApiSave).toHaveBeenCalledTimes(2); 
       
-        // 🔹 Scenario 3: Re-render with previous data (should NOT call API again)
+        // Scenario 3: Re-render with previous data (should NOT call API again)
         rerender({ data: { username: "updated_user" } });
       
         await act(async () => {
@@ -176,6 +177,33 @@ describe("useFormAutoSave Hook", () => {
       
         expect(mockApiSave).toHaveBeenCalledTimes(2);
       });
+      it("should update isSaving state correctly during save", async () => {
+        const mockApiSave: jest.Mock<Promise<void>> = jest.fn(
+          () => new Promise<void>((resolve) => setTimeout(resolve, 500))
+        );
+        const mockOnError = jest.fn();
       
+        const { result } = renderHook(
+          ({ data }) => useFormAutoSave(data, "test-isSaving", 1000, "api", mockApiSave, mockOnError),
+          { initialProps: { data: { username: "test_user" } } }
+        );
       
+        expect(result.current.isSaving).toBe(false);
+      
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
+      
+        await act(async () => {});
+      
+        expect(result.current.isSaving).toBe(true);
+      
+        await act(async () => {
+          jest.advanceTimersByTime(500);
+        });
+      
+        await act(async () => {});
+      
+        expect(result.current.isSaving).toBe(false);
+      });
 });
