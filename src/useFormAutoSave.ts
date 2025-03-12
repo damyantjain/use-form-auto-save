@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 
 type StorageType = "localStorage" | "sessionStorage" | "api";
 
@@ -32,7 +32,8 @@ type ErrorCallback = (error: any) => void;
  * @returns An object containing:
  * - restoreFormData: A function to restore and parse the saved form data from storage. (Not available for "api" storage.)
  * - isSaving: A boolean value indicating whether the auto-save process is currently in progress.
- * - retryCount: The current count of retry attempts made after a failed save.
+ * - isAutoSavePaused: A boolean value indicating whether the auto-save process is paused due to repeated failures.
+ * - resumeAutoSave: A function to reset the retry count and resume the auto-save process after it has been paused.
  *
  * @example
  * const { restoreFormData, isSaving, retryCount } = useFormAutoSave(formData, 'myFormKey', 1000, 'localStorage');
@@ -48,11 +49,17 @@ export const useFormAutoSave = (
 ) => {
   const [lastSavedData, setLastSavedData] = useState<object | null>(null);
   const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [isSaveSuccessful, setIsSaveSuccessful] = useState<boolean>(false);
   const [retryCount, setRetryCount] = useState<number>(0);
+  const [isAutoSavePaused, setIsAutoSavePaused] = useState<boolean>(false);
 
+  const resumeAutoSave = useCallback(() => {
+    setRetryCount(0);
+    setIsAutoSavePaused(false);
+  }, []);
 
   useEffect(() => {
-    if (!formData || !formKey) return;
+    if (!formData || !formKey || isAutoSavePaused) return;
     if (Object.keys(formData).length === 0) return;
 
     if (lastSavedData && JSON.stringify(lastSavedData) === JSON.stringify(formData)) {
@@ -63,25 +70,29 @@ export const useFormAutoSave = (
     const handler = setTimeout(async () => {
       try {
         setIsSaving(true);
+        setIsSaveSuccessful(false);
+
         if (storageType === "api" && saveFunction) {
           await saveFunction(formData);
         } else {
           const storage = storageType === "localStorage" ? localStorage : sessionStorage;
           storage.setItem(formKey, JSON.stringify(formData));
         }
+
         setLastSavedData(formData);
         setRetryCount(0);
+        setIsSaveSuccessful(true);
       } catch (error) {
         console.error("Auto-save error:", error);
         if (onError) onError(error);
 
-        // Retry saving
         if (retryCount < maxRetries) {
           const retryDelay = Math.pow(2, retryCount) * 1000;
           console.warn(`Retrying save in ${retryDelay / 1000}s...`);
           setTimeout(() => setRetryCount(retryCount + 1), retryDelay);
         } else {
-          console.error("Max retries reached. Stopping auto-save.");
+          console.error("Max retries reached for this data. Waiting for new changes.");
+          setIsAutoSavePaused(true);
         }
       } finally {
         setIsSaving(false);
@@ -89,7 +100,7 @@ export const useFormAutoSave = (
     }, debounceTime);
 
     return () => clearTimeout(handler);
-  }, [formData, formKey, debounceTime, storageType, saveFunction, onError, lastSavedData, retryCount]);
+  }, [formData, formKey, debounceTime, storageType, saveFunction, onError, retryCount, isAutoSavePaused]);
 
   const restoreFormData = () => {
     if (storageType === "api") {
@@ -101,5 +112,5 @@ export const useFormAutoSave = (
     return savedData ? JSON.parse(savedData) : null;
   };
 
-  return { restoreFormData, isSaving, retryCount };
+  return { restoreFormData, isSaving, isSaveSuccessful, isAutoSavePaused, resumeAutoSave };
 };
