@@ -238,5 +238,36 @@ describe("useFormAutoSave Hook", () => {
         expect(result.current.isSaving).toBe(false);
         expect(mockOnError).toHaveBeenCalledTimes(1);
       });
+      it("should update isSaveSuccessful correctly on successful save", async () => {
+        const mockApiSave = jest.fn().mockResolvedValue(undefined);
+        const mockOnError = jest.fn();
+      
+        const { rerender, result } = renderHook(
+          ({ data }) => useFormAutoSave(data, "test-save-success", 1000, "api", mockApiSave, mockOnError),
+          { initialProps: { data: { username: "test_user" } } }
+        );
+      
+        expect(result.current.isSaveSuccessful).toBe(false);
+      
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
+      
+        expect(result.current.isSaving).toBe(true);
+        expect(result.current.isSaveSuccessful).toBe(false);
+      
+        await act(async () => {});
+      
+        expect(result.current.isSaveSuccessful).toBe(true);
+        expect(result.current.isSaving).toBe(false);
+
+        rerender({ data: { username: "updated_user" } });
+      
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
+      
+        expect(result.current.isSaveSuccessful).toBe(false);
+      });
       
 });
