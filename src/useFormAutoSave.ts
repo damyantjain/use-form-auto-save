@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+
+import { useEffect, useState, useCallback } from 'react';
 
 type StorageType = "localStorage" | "sessionStorage" | "api";
 
@@ -7,14 +8,35 @@ type SaveFunction = (formData: object) => Promise<void>;
 type ErrorCallback = (error: any) => void;
 
 /**
- * Basic version of useFormAutoSave hook.
- * Automatically saves form data to localStorage.
- * Restores saved data on component mount.
+ * Automatically persists form data to a specified storage mechanism with debouncing and retry logic.
  *
- * @param formData - The form state to be saved.
- * @param formKey - Unique key to identify saved form data.
- * @param debounceTime - Time delay before saving (default: 1000ms).
- * @param storageType - Storage type to use (default: localStorage).
+ * This hook monitors changes in the provided form data and, after a debounce delay, saves the data to the
+ * chosen storage type. If storageType is set to "api", a custom asynchronous saveFunction must be provided.
+ * Local and session storage are supported, with automatic data restoration available (except when using "api" storage).
+ *
+ * @remarks
+ * - If no changes are detected compared to the last saved state, the save operation is skipped.
+ * - On failure, the hook will automatically retry the save operation up to a specified number of times,
+ *   using an exponential backoff strategy.
+ * - The hook provides a restoreFormData helper to retrieve saved form data (except when storageType is "api").
+ *
+ * @param formData - The current form state to be saved as an object. Must be non-empty.
+ * @param formKey - A unique key string used to store and retrieve the form data.
+ * @param debounceTime - The delay in milliseconds before saving changes; defaults to 1000ms.
+ * @param storageType - The storage mechanism to be used: "localStorage", "sessionStorage", or "api"; defaults to "localStorage".
+ * @param saveFunction - An optional asynchronous function that handles saving when using "api" storage.
+ *                       It should return a Promise that resolves when the save operation is successful.
+ * @param onError - An optional callback function that is invoked with the error if the save operation fails.
+ * @param maxRetries - The maximum number of retry attempts to handle a failed save operation; defaults to 3.
+ *
+ * @returns An object containing:
+ * - restoreFormData: A function to restore and parse the saved form data from storage. (Not available for "api" storage.)
+ * - isSaving: A boolean value indicating whether the auto-save process is currently in progress.
+ * - isAutoSavePaused: A boolean value indicating whether the auto-save process is paused due to repeated failures.
+ * - resumeAutoSave: A function to reset the retry count and resume the auto-save process after it has been paused.
+ *
+ * @example
+ * const { restoreFormData, isSaving, retryCount } = useFormAutoSave(formData, 'myFormKey', 1000, 'localStorage');
  */
 export const useFormAutoSave = (
   formData: object,
@@ -22,14 +44,22 @@ export const useFormAutoSave = (
   debounceTime = 1000,
   storageType: StorageType = "localStorage",
   saveFunction?: SaveFunction,
-  onError?: ErrorCallback
+  onError?: ErrorCallback,
+  maxRetries = 3
 ) => {
   const [lastSavedData, setLastSavedData] = useState<object | null>(null);
   const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [isSaveSuccessful, setIsSaveSuccessful] = useState<boolean>(false);
+  const [retryCount, setRetryCount] = useState<number>(0);
+  const [isAutoSavePaused, setIsAutoSavePaused] = useState<boolean>(false);
 
+  const resumeAutoSave = useCallback(() => {
+    setRetryCount(0);
+    setIsAutoSavePaused(false);
+  }, []);
 
   useEffect(() => {
-    if (!formData || !formKey) return;
+    if (!formData || !formKey || isAutoSavePaused) return;
     if (Object.keys(formData).length === 0) return;
 
     if (lastSavedData && JSON.stringify(lastSavedData) === JSON.stringify(formData)) {
@@ -40,23 +70,37 @@ export const useFormAutoSave = (
     const handler = setTimeout(async () => {
       try {
         setIsSaving(true);
+        setIsSaveSuccessful(false);
+
         if (storageType === "api" && saveFunction) {
           await saveFunction(formData);
         } else {
           const storage = storageType === "localStorage" ? localStorage : sessionStorage;
           storage.setItem(formKey, JSON.stringify(formData));
         }
+
         setLastSavedData(formData);
+        setRetryCount(0);
+        setIsSaveSuccessful(true);
       } catch (error) {
         console.error("Auto-save error:", error);
         if (onError) onError(error);
+
+        if (retryCount < maxRetries) {
+          const retryDelay = Math.pow(2, retryCount) * 1000;
+          console.warn(`Retrying save in ${retryDelay / 1000}s...`);
+          setTimeout(() => setRetryCount(retryCount + 1), retryDelay);
+        } else {
+          console.error("Max retries reached for this data. Waiting for new changes.");
+          setIsAutoSavePaused(true);
+        }
       } finally {
         setIsSaving(false);
       }
     }, debounceTime);
 
     return () => clearTimeout(handler);
-  }, [formData, formKey, debounceTime, storageType, saveFunction]);
+  }, [formData, formKey, debounceTime, storageType, saveFunction, onError, retryCount, isAutoSavePaused]);
 
   const restoreFormData = () => {
     if (storageType === "api") {
@@ -68,5 +112,5 @@ export const useFormAutoSave = (
     return savedData ? JSON.parse(savedData) : null;
   };
 
-  return { restoreFormData, isSaving };
+  return { restoreFormData, isSaving, isSaveSuccessful, isAutoSavePaused, resumeAutoSave };
 };
