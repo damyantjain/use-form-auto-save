@@ -1,3 +1,16 @@
+/**
+ * @module useFormAutoSaveTests
+ * 
+ * @description
+ * This module contains a comprehensive suite of tests for the useFormAutoSave hook.
+ *
+ * @remarks
+ * Prior to each test, localStorage is cleared and fake timers are set up to simulate debounce
+ * delays. After each test, pending timers are run, and real timers are restored.
+ *
+ * @packageDocumentation
+ */
+
 import { renderHook, act } from "@testing-library/react";
 import { useFormAutoSave } from "../src/useFormAutoSave";
 
