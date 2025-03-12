@@ -88,6 +88,8 @@ describe("useFormAutoSave Hook", () => {
         act(() => {
           jest.advanceTimersByTime(1000);
         });
+
+        await act(async () => {});
       
         expect(mockApiSave).toHaveBeenCalledTimes(1);
         expect(mockApiSave).toHaveBeenCalledWith({ username: "test_user" });
@@ -97,6 +99,8 @@ describe("useFormAutoSave Hook", () => {
         act(() => {
           jest.advanceTimersByTime(1000);
         });
+
+        await act(async () => {});
       
         expect(mockApiSave).toHaveBeenCalledTimes(2);
         expect(mockApiSave).toHaveBeenCalledWith({ username: "updated_user" });
@@ -113,6 +117,8 @@ describe("useFormAutoSave Hook", () => {
         await act(async () => {
           jest.advanceTimersByTime(1000);
         });
+
+        await act(async () => {});
       
         expect(mockApiSave).toHaveBeenCalledTimes(1);
         expect(mockOnError).toHaveBeenCalledTimes(1);
@@ -122,6 +128,8 @@ describe("useFormAutoSave Hook", () => {
         await act(async () => {
           jest.advanceTimersByTime(1000);
         });
+
+        await act(async () => {});
       
         expect(mockApiSave).toHaveBeenCalledTimes(2);
       
@@ -132,6 +140,8 @@ describe("useFormAutoSave Hook", () => {
         await act(async () => {
           jest.advanceTimersByTime(1000);
         });
+
+        await act(async () => {});
       
         expect(mockApiSave).toHaveBeenCalledTimes(1);
       });
@@ -147,6 +157,8 @@ describe("useFormAutoSave Hook", () => {
         await act(async () => {
           jest.advanceTimersByTime(1000);
         });
+
+        await act(async () => {});
       
         expect(mockApiSave).toHaveBeenCalledTimes(1);
       
@@ -156,6 +168,8 @@ describe("useFormAutoSave Hook", () => {
         await act(async () => {
           jest.advanceTimersByTime(1000);
         });
+
+        await act(async () => {});
       
         expect(mockApiSave).toHaveBeenCalledTimes(1);
       
@@ -165,6 +179,8 @@ describe("useFormAutoSave Hook", () => {
         await act(async () => {
           jest.advanceTimersByTime(1000);
         });
+
+        await act(async () => {});
       
         expect(mockApiSave).toHaveBeenCalledTimes(2); 
       
@@ -174,6 +190,8 @@ describe("useFormAutoSave Hook", () => {
         await act(async () => {
           jest.advanceTimersByTime(1000);
         });
+
+        await act(async () => {});
       
         expect(mockApiSave).toHaveBeenCalledTimes(2);
       });
@@ -224,14 +242,6 @@ describe("useFormAutoSave Hook", () => {
         });
       
         expect(result.current.isSaving).toBe(true);
-      
-        await act(async () => {
-          try {
-            await mockApiSave();
-          } catch (error) {
-            // API failed, continue test
-          }
-        });
       
         await act(async () => {});
       
