@@ -279,5 +279,44 @@ describe("useFormAutoSave Hook", () => {
       
         expect(result.current.isSaveSuccessful).toBe(false);
       });
+      it("should set isSaveSuccessful to false when saving fails", async () => {
+        const mockApiSave = jest.fn().mockRejectedValue(new Error("API save failed"));
+        const mockOnError = jest.fn();
       
+        const { rerender, result } = renderHook(
+          ({ data }) => useFormAutoSave(data, "test-save-fail", 1000, "api", mockApiSave, mockOnError),
+          { initialProps: { data: { username: "test_user" } } }
+        );
+      
+        expect(result.current.isSaveSuccessful).toBe(false);
+      
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
+
+        expect(result.current.isSaving).toBe(true);
+      
+        await act(async () => {});
+      
+        expect(result.current.isSaving).toBe(false);
+        expect(result.current.isSaveSuccessful).toBe(false);
+        expect(mockOnError).toHaveBeenCalledTimes(1);
+      
+        await act(async () => {});
+      
+        expect(result.current.isSaveSuccessful).toBe(false);
+        expect(result.current.isSaving).toBe(false);
+        expect(mockOnError).toHaveBeenCalledTimes(1);
+      
+        rerender({ data: { username: "updated_user" } });
+      
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
+      
+        await act(async () => {});
+      
+        expect(result.current.isSaveSuccessful).toBe(false);
+        expect(mockOnError).toHaveBeenCalledTimes(2);
+      });      
 });
