@@ -206,4 +206,37 @@ describe("useFormAutoSave Hook", () => {
       
         expect(result.current.isSaving).toBe(false);
       });
+      it("should reset isSaving to false when API save fails", async () => {
+        const mockApiSave: jest.Mock<Promise<void>> = jest.fn(
+          () =>  Promise.reject(new Error("API save failed"))
+        );
+        const mockOnError = jest.fn();
+      
+        const { result } = renderHook(
+          ({ data }) => useFormAutoSave(data, "test-isSaving-fail", 1000, "api", mockApiSave, mockOnError),
+          { initialProps: { data: { username: "test_user" } } }
+        );
+      
+        expect(result.current.isSaving).toBe(false);
+      
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
+      
+        expect(result.current.isSaving).toBe(true);
+      
+        await act(async () => {
+          try {
+            await mockApiSave();
+          } catch (error) {
+            // API failed, continue test
+          }
+        });
+      
+        await act(async () => {});
+      
+        expect(result.current.isSaving).toBe(false);
+        expect(mockOnError).toHaveBeenCalledTimes(1);
+      });
+      
 });
