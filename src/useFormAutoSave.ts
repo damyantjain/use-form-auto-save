@@ -65,10 +65,8 @@ export const useFormAutoSave = (
   }, []);
 
   useEffect(() => {
-    console.log("yo")
     if (!watchedFormState || !formKey || isAutoSavePaused) return;
     if (Object.keys(watchedFormState).length === 0) return;
-    console.log("yoooo")
     if (lastSavedData && JSON.stringify(lastSavedData) === JSON.stringify(watchedFormState)) {
       console.log("Skipping save: No changes detected.");
       return;
