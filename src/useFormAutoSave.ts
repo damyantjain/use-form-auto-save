@@ -30,6 +30,7 @@ type ErrorCallback = (error: any) => void;
  *                       It should return a Promise that resolves when the save operation is successful.
  * @param onError - An optional callback function that is invoked with the error if the save operation fails.
  * @param maxRetries - The maximum number of retry attempts to handle a failed save operation; defaults to 3.
+ * @param control - An optional React Hook Form control object to watch for changes in the form data.
  *
  * @returns An object containing:
  * - restoreFormData: A function to restore and parse the saved form data from storage. (Not available for "api" storage.)
