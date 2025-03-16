@@ -41,16 +41,25 @@ type ErrorCallback = (error: any) => void;
  * @example
  * const { restoreFormData, isSaving, retryCount } = useFormAutoSave(formData, 'myFormKey', 1000, 'localStorage');
  */
-export const useFormAutoSave = (
-  formData: object | null,
-  formKey: string,
+export const useFormAutoSave = ({
+  formData,
+  formKey,
+  control,
   debounceTime = 1000,
-  storageType: StorageType = "localStorage",
-  saveFunction?: SaveFunction,
-  onError?: ErrorCallback,
+  storageType = "localStorage",
+  saveFunction,
+  onError,
   maxRetries = 3,
-  control?: Control<any> 
-) => {
+}: {
+  formData: object | null,
+  formKey: string;
+  control?: Control<any>; 
+  debounceTime?: number;
+  storageType?: StorageType;
+  saveFunction?: SaveFunction;
+  onError?: ErrorCallback;
+  maxRetries?: number;
+}) => {
   const [lastSavedData, setLastSavedData] = useState<object | null>(null);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [isSaveSuccessful, setIsSaveSuccessful] = useState<boolean>(false);
