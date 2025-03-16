@@ -7,12 +7,18 @@ export const ReactHookFormTest = () => {
     defaultValues: { name: "", email: "" },
   });
 
-  useFormAutoSave({}, "react-hook-form-test", 2000, "localStorage", undefined, undefined, 3, control);
+  useFormAutoSave({
+    formData: {},
+    formKey: "react-hook-form-test",
+    debounceTime: 2000,
+    storageType: "localStorage",
+    control,
+  });
 
   return (
     <div>
       <h2>React Hook Form Auto-Save Test</h2>
-      <input {...register("name")} placeholder="Namee" />
+      <input {...register("name")} placeholder="Name" />
       <input {...register("email")} placeholder="Email" />
     </div>
   );

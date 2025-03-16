@@ -19,7 +19,13 @@ describe("useFormAutoSave Hook - React Hook Form Integration", () => {
         defaultValues: { name: "Alice", email: "alice@example.com" },
       });
 
-      return useFormAutoSave(null, "test-rhf", 1000, "localStorage", undefined, undefined, 3, control);
+      return useFormAutoSave({
+        formData: null,
+        formKey: "test-rhf",
+        debounceTime: 1000,
+        storageType: "localStorage",
+        control,
+      });
     });
 
     expect(localStorage.getItem("test-rhf")).toBeNull();
@@ -36,7 +42,13 @@ describe("useFormAutoSave Hook - React Hook Form Integration", () => {
   it("should not save if form data has not changed", () => {
     const { result, rerender } = renderHook(({ defaultValues }) => {
       const { control } = useForm({ defaultValues });
-      return useFormAutoSave(null, "test-rhf-no-change", 1000, "localStorage", undefined, undefined, 3, control);
+      return useFormAutoSave({
+        formData: null,
+        formKey: "test-rhf-no-change",
+        debounceTime: 1000,
+        storageType: "localStorage",
+        control,
+      });
     }, { initialProps: { defaultValues: { name: "Alice", email: "alice@example.com" } } });
 
     act(() => {
@@ -66,7 +78,13 @@ describe("useFormAutoSave Hook - React Hook Form Integration", () => {
         defaultValues: { name: "Alice", email: "alice@example.com" },
       });
   
-      return { ...useFormAutoSave(null, "test-rhf-update", 1000, "localStorage", undefined, undefined, 3, control), setValue };
+      return { ...useFormAutoSave({
+        formData: null,
+        formKey: "test-rhf-update",
+        debounceTime: 1000,
+        storageType: "localStorage",
+        control,
+      }), setValue };
     });
   
     act(() => {
