@@ -5,7 +5,7 @@ const fakeApiSave = async (formData: object) => {
   return new Promise<void>((resolve, reject) => {
     console.log("Saving to API:", formData);
     setTimeout(() => {
-      if (Math.random() > 0.1) {
+      if (Math.random() > 0.3) {
         console.log("API Save Successful!");
         resolve();
       } else {
