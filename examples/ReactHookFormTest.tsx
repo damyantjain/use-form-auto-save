@@ -3,17 +3,24 @@ import { useForm } from "react-hook-form";
 import { useFormAutoSave } from "../src/useFormAutoSave";
 
 export const ReactHookFormTest = () => {
-  const { control, register } = useForm({
+  const { control, register, reset } = useForm({
     defaultValues: { name: "", email: "" },
   });
 
-  useFormAutoSave({
-    formData: {},
+  const { restoreFormData } = useFormAutoSave({
+    formData: null,
     formKey: "react-hook-form-test",
-    debounceTime: 2000,
-    storageType: "localStorage",
+    debounceTime: 1000,
     control,
+    storageType: "localStorage"
   });
+
+  React.useEffect(() => {
+    const saved = restoreFormData();
+    if (saved) {
+      reset(saved);
+    }
+  }, [restoreFormData, reset]);
 
   return (
     <div>
