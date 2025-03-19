@@ -12,34 +12,45 @@ type ErrorCallback = (error: any) => void;
 /**
  * Automatically persists form data to a specified storage mechanism with debouncing and retry logic.
  *
- * This hook monitors changes in the provided form data and, after a debounce delay, saves the data to the
- * chosen storage type. If storageType is set to "api", a custom asynchronous saveFunction must be provided.
- * Local and session storage are supported, with automatic data restoration available (except when using "api" storage).
+ * This hook watches for changes in the provided form data and, after a specified debounce delay, saves the data to
+ * the chosen storage type. If the storageType is "api", a custom asynchronous saveFunction must be provided.
+ * Local and session storage are supported, and automatic data restoration is available (except when using "api" storage).
  *
  * @remarks
- * - If no changes are detected compared to the last saved state, the save operation is skipped.
- * - On failure, the hook will automatically retry the save operation up to a specified number of times,
- *   using an exponential backoff strategy.
- * - The hook provides a restoreFormData helper to retrieve saved form data (except when storageType is "api").
+ * - Saves are skipped if no changes are detected compared to the last saved state.
+ * - On failure, the hook automatically retries the save operation up to maxRetries times using an exponential backoff strategy.
+ * - The restoreFormData method is provided to retrieve saved form data (not available for "api" storage).
  *
- * @param formData - The current form state to be saved as an object. Must be non-empty.
- * @param formKey - A unique key string used to store and retrieve the form data.
- * @param debounceTime - The delay in milliseconds before saving changes; defaults to 1000ms.
- * @param storageType - The storage mechanism to be used: "localStorage", "sessionStorage", or "api"; defaults to "localStorage".
- * @param saveFunction - An optional asynchronous function that handles saving when using "api" storage.
- *                       It should return a Promise that resolves when the save operation is successful.
- * @param onError - An optional callback function that is invoked with the error if the save operation fails.
- * @param maxRetries - The maximum number of retry attempts to handle a failed save operation; defaults to 3.
- * @param control - An optional React Hook Form control object to watch for changes in the form data.
+ * @param formData - The current form state as an object. This is used when a React Hook Form control is not provided.
+ * @param formKey - A unique key used for saving and retrieving the form data.
+ * @param control - An optional React Hook Form control to watch for changes in the form data.
+ * @param debounceTime - The delay in milliseconds before triggering the save; defaults to 1000ms.
+ * @param storageType - The mechanism for data storage: "localStorage", "sessionStorage", or "api"; defaults to "localStorage".
+ * @param saveFunction - An optional asynchronous function for saving data when using "api" storage. It should return a Promise.
+ * @param onError - An optional callback invoked with the error in case the save operation fails.
+ * @param maxRetries - The maximum number of retry attempts after a failed save; defaults to 3.
  *
  * @returns An object containing:
- * - restoreFormData: A function to restore and parse the saved form data from storage. (Not available for "api" storage.)
- * - isSaving: A boolean value indicating whether the auto-save process is currently in progress.
- * - isAutoSavePaused: A boolean value indicating whether the auto-save process is paused due to repeated failures.
- * - resumeAutoSave: A function to reset the retry count and resume the auto-save process after it has been paused.
+ * - restoreFormData: A function to retrieve and parse the saved form data (unavailable for "api" storage).
+ * - isSaving: A boolean indicating if the auto-save process is in progress.
+ * - isSaveSuccessful: A boolean flag that shows if the last save operation succeeded.
+ * - isAutoSavePaused: A boolean indicating whether auto-save is paused due to repeated failures.
+ * - resumeAutoSave: A function to reset the retry count and re-enable auto-saving after it has been paused.
  *
  * @example
- * const { restoreFormData, isSaving, retryCount } = useFormAutoSave(formData, 'myFormKey', 1000, 'localStorage');
+ * const { restoreFormData, isSaving, isSaveSuccessful, isAutoSavePaused, resumeAutoSave } =
+ *   useFormAutoSave({
+ *     formData: { name: 'John Doe', email: 'john@example.com' },
+ *     formKey: 'user-profile',
+ *     control: formControl, // optional: only if using react-hook-form
+ *     debounceTime: 1000,
+ *     storageType: 'localStorage',
+ *     saveFunction: async (data) => {
+ *       await apiSave(data);
+ *     },
+ *     onError: (err) => console.error('Save error: ', err),
+ *     maxRetries: 3,
+ *   });
  */
 export const useFormAutoSave = ({
   formData,
