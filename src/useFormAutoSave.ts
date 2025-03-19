@@ -1,6 +1,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useWatch, Control } from "react-hook-form";
+import { useFormState } from "react-hook-form";
 
 
 type StorageType = "localStorage" | "sessionStorage" | "api";
@@ -61,6 +62,7 @@ export const useFormAutoSave = ({
   saveFunction,
   onError,
   maxRetries = 3,
+  validateBeforeSave = false
 }: {
   formData: object | null,
   formKey: string;
@@ -70,6 +72,7 @@ export const useFormAutoSave = ({
   saveFunction?: SaveFunction;
   onError?: ErrorCallback;
   maxRetries?: number;
+  validateBeforeSave?: boolean;
 }) => {
   const [lastSavedData, setLastSavedData] = useState<object | null>(null);
   const [isSaving, setIsSaving] = useState<boolean>(false);
@@ -78,6 +81,7 @@ export const useFormAutoSave = ({
   const [isAutoSavePaused, setIsAutoSavePaused] = useState<boolean>(false);
 
   const watchedFormState = control ? useWatch({ control }) : formData;
+  const { isDirty, isValid } = control ? useFormState({ control }) : { isDirty: true, isValid: true };
 
   const resumeAutoSave = useCallback(() => {
     setRetryCount(0);
@@ -87,6 +91,12 @@ export const useFormAutoSave = ({
   useEffect(() => {
     if (!watchedFormState || !formKey || isAutoSavePaused) return;
     if (Object.keys(watchedFormState).length === 0) return;
+
+    if (validateBeforeSave && control && !isDirty) {
+      console.log("Skipping save: Form is not dirty.");
+      return;
+    }
+
     if (lastSavedData && JSON.stringify(lastSavedData) === JSON.stringify(watchedFormState)) {
       console.log("Skipping save: No changes detected.");
       return;
@@ -107,6 +117,7 @@ export const useFormAutoSave = ({
         setLastSavedData(watchedFormState);
         setRetryCount(0);
         setIsSaveSuccessful(true);
+        console.log("Auto-save successful!");
       } catch (error) {
         console.error("Auto-save error:", error);
         if (onError) onError(error);
