@@ -5,7 +5,7 @@ const fakeApiSave = async (formData: object) => {
   return new Promise<void>((resolve, reject) => {
     console.log("Saving to API:", formData);
     setTimeout(() => {
-      if (Math.random() > 0.1) {
+      if (Math.random() > 0.3) {
         console.log("API Save Successful!");
         resolve();
       } else {
@@ -20,7 +20,13 @@ const fakeApiSave = async (formData: object) => {
 export const AutoSaveApiExample = () => {
   const [formData, setFormData] = useState({ name: "", email: "" });
 
-  const { isSaving, isSaveSuccessful, isAutoSavePaused, resumeAutoSave } = useFormAutoSave(formData, "user-api-form", 2000, "api", fakeApiSave);
+  const { isSaving, isSaveSuccessful, isAutoSavePaused, resumeAutoSave } = useFormAutoSave({
+      formData,
+      formKey: "user-api-form",
+      debounceTime: 2000,
+      storageType: "api",
+      saveFunction: fakeApiSave,
+    });
 
   return (
     <div>
