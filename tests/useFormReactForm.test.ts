@@ -125,5 +125,43 @@ describe("useFormAutoSave (React Hook Form)", () => {
   
     expect(result.current.restoreFormData()).toEqual({ name: "Bob", email: "bob@example.com" });
   });
+
+
+  it("Using React Hook Form Control: should react to control value changes", () => {
+    // Set up a minimal form using react-hook-form
+    const { result: formResult } = renderHook(() => {
+        const { control, setValue } = useForm({ defaultValues: { username: "initial_user" } });
+        return { control, setValue };
+    });
+
+    // Pass the control to useFormAutoSave
+    const { rerender } = renderHook(
+        ({ ctrl }) => useFormAutoSave({
+          control: ctrl,
+          formKey: "control-test",
+          debounceTime: 1000,
+        }),
+        { initialProps: { ctrl: formResult.current.control } }
+    );
+
+    // Initially, waiting for timer
+    act(() => { 
+      jest.advanceTimersByTime(1000);
+    });
+    // Data from control should be saved
+    expect(localStorage.getItem("control-test")).toBe(JSON.stringify({ username: "initial_user" }));
+
+    // Simulate a value change by updating the control via setValue
+    act(() => {
+        formResult.current.setValue("username", "updated_user");
+    });
+
+    // Rerender manually to trigger watch updates
+    rerender({ ctrl: formResult.current.control });
+    act(() => {
+      jest.advanceTimersByTime(1000);
+    });
+    expect(localStorage.getItem("control-test")).toBe(JSON.stringify({ username: "updated_user" }));
+});
   
 });
