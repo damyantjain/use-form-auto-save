@@ -3,15 +3,21 @@ import { useFormAutoSave } from "../src/useFormAutoSave";
 
 export const AutoSaveExample = () => {
   const [formData, setFormData] = useState({ name: "", email: "" });
-  const { restoreFormData } = useFormAutoSave({
+
+  const { restoreFormData, setLastSavedData } = useFormAutoSave({
     formData,
     formKey: "user-form",
     debounceTime: 1000,
     storageType: "sessionStorage",
+    skipInitialSave: true
   });
+
   useEffect(() => {
     const savedData = restoreFormData();
-    if (savedData) setFormData(savedData);
+    if (savedData) {
+      setFormData(savedData);
+      setLastSavedData(savedData);
+    }
   }, []);
 
   return (
