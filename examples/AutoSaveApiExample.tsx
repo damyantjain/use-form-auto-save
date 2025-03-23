@@ -26,6 +26,7 @@ export const AutoSaveApiExample = () => {
       debounceTime: 2000,
       storageType: "api",
       saveFunction: fakeApiSave,
+      debug: true,
     });
 
   return (
