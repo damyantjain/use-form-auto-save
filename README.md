@@ -36,16 +36,26 @@ yarn add your-package-name
 
 ```jsx
 import React, { useState } from "react";
-import { useFormAutoSave } from "your-package-name";
+import { useFormAutoSave } from "use-form-auto-save";
 
-const FormComponent = () => {
+const AutoSaveExample = () => {
   const [formData, setFormData] = useState({ name: "", email: "" });
-
-  const { isSaving } = useFormAutoSave({
+  const { isSaving, restoreFormData, setLastSavedData } = useFormAutoSave({
     formKey: "user-form",
     formData,
+    storageType: "sessionStorage",
     debounceTime: 1000,
+    debug: true,
   });
+
+  // Restore form data on component mount
+  useEffect(() => {
+    const savedData = restoreFormData();
+    if (savedData) {
+      setFormData(savedData);
+      setLastSavedData(savedData);
+    }
+  }, []);
 
   return (
     <>
@@ -67,7 +77,7 @@ const FormComponent = () => {
 
 ```jsx
 import React, { useState } from "react";
-import { useFormAutoSave } from "your-package-name";
+import { useFormAutoSave } from "use-form-auto-save";
 import { toast } from "react-toastify";
 import apiClient from "./apiClient";
 
