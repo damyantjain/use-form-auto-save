@@ -1,5 +1,7 @@
 # useFormAutoSave
 
+[![npm](https://img.shields.io/npm/v/use-form-auto-save)](https://www.npmjs.com/package/use-form-auto-save)
+
 > A custom React hook to automatically save form data seamlessly to localStorage, sessionStorage, or an external API, featuring debouncing, error handling, retry mechanisms, and restoration capabilities. It also integrates smoothly with React Hook Form.
 
 ---
@@ -100,6 +102,50 @@ const FormWithApi = () => {
 };
 ```
 
+### Additional Examples
+
+Persist form data in session storage:
+
+```jsx
+useFormAutoSave({ formKey: 'session-form', formData, storageType: 'sessionStorage' });
+```
+
+Persist form using React Hook Form:
+
+```jsx
+useFormAutoSave({ formKey: 'rhf-form', control });
+```
+
+Enable debug logging:
+
+```jsx
+useFormAutoSave({ formKey: 'debug-form', formData, debug: true });
+```
+
+Persist form data with a custom debounce interval:
+
+```jsx
+useFormAutoSave({ formKey: 'debounced-form', formData, debounceTime: 3000 });
+```
+
+Persist form data to an API with error handling:
+
+```jsx
+useFormAutoSave({
+  formKey: 'api-form',
+  formData,
+  storageType: 'api',
+  saveFunction: async (data) => await apiClient.save(data),
+  onError: (error) => console.error("Auto-save error:", error)
+});
+```
+
+Pause auto-saving on initial render:
+
+```jsx
+useFormAutoSave({ formKey: 'skip-initial', formData, skipInitialSave: true });
+```
+
 ---
 
 ## API Reference
@@ -133,3 +179,8 @@ const FormWithApi = () => {
 - Choose appropriate debounce intervals based on form complexity and user interactions.
 - Regularly test error-handling mechanisms to ensure reliability.
 
+---
+
+## License
+
+Released under the [MIT License](./LICENSE).
