@@ -16,6 +16,7 @@
  * @property {ErrorCallback} [config.onError] - Callback triggered on save error.
  * @property {number} [config.maxRetries=3] - Number of retry attempts on failure before pausing auto-save.
  * @property {boolean} [config.skipInitialSave=false] - Skip auto-saving on initial render.
+ * @property {boolean} [config.debug=false] - Enable debug logging for the hook.
  *
  * @returns {object} Object containing methods and state for managing auto-save functionality:
  *   - restoreFormData(): Function to retrieve saved form data (null if using API storage).
