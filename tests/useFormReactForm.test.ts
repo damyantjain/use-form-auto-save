@@ -14,7 +14,7 @@ describe("useFormAutoSave (React Hook Form)", () => {
   });
 
   it("should auto-save form data to sessionStorage", () => {
-    const { result } = renderHook(() => {
+    renderHook(() => {
       const { control } = useForm({ defaultValues: { name: "Alice" } });
       return useFormAutoSave({
         control,
@@ -35,7 +35,7 @@ describe("useFormAutoSave (React Hook Form)", () => {
   });
 
   it("should not save when data has not changed", () => {
-    const { result, rerender } = renderHook(({ values }) => {
+    const { rerender } = renderHook(({ values }) => {
       const { control } = useForm({ defaultValues: values });
       return useFormAutoSave({
         control,
@@ -82,7 +82,7 @@ describe("useFormAutoSave (React Hook Form)", () => {
   });
 
   it("should save data from RHF control to sessionStorage", () => {
-    const { result } = renderHook(() => {
+    renderHook(() => {
       const { control } = useForm({ defaultValues: { name: "", email: "" } });
       return useFormAutoSave({
         control,

@@ -59,8 +59,8 @@ import { useWatch, Control } from 'react-hook-form';
 
 // Types
 export type StorageType = 'localStorage' | 'sessionStorage' | 'api';
-export type SaveFunction = (formData: object) => Promise<void>;
-export type ErrorCallback = (error: any) => void;
+export type SaveFunction = (_formData: object) => Promise<void>;
+export type ErrorCallback = (_error: any) => void;
 
 export type AutoSaveConfig =
   | ({
