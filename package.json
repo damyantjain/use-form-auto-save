@@ -1,23 +1,42 @@
 {
   "name": "use-form-auto-save",
   "version": "1.0.0",
-  "description": "A React hook for automatically saving and restoring form data.",
-  "main": "index.js",
+  "description": "A customizable React hook for automatically saving and restoring form data with support for localStorage, sessionStorage, and external APIs.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
+    "build": "tsc",
+    "prepare": "npm run build",
     "test": "jest",
     "start": "parcel index.html"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/damyantjain/use-form-auto-save.git"
+    "url": "https://github.com/damyantjain/use-form-auto-save.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "react",
+    "hook",
+    "auto-save",
+    "form",
+    "localStorage",
+    "sessionStorage",
+    "api",
+    "react-hook-form"
+  ],
+  "author": "Damyant Jain",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/damyantjain/use-form-auto-save/issues"
   },
   "homepage": "https://github.com/damyantjain/use-form-auto-save#readme",
+  "files": [
+    "dist"
+  ],
+  "peerDependencies": {
+    "react": ">=16.8.0",
+    "react-hook-form": ">=7.0.0"
+  },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.2.0",
@@ -30,9 +49,5 @@
     "process": "^0.11.10",
     "ts-jest": "^29.2.6",
     "typescript": "^5.8.2"
-  },
-  "dependencies": {
-    "react": "^19.0.0",
-    "react-hook-form": "^7.54.2"
   }
 }
