@@ -23,9 +23,9 @@
 ## Installation
 
 ```bash
-npm install your-package-name
+npm install use-form-auto-save
 # or
-yarn add your-package-name
+yarn add use-form-auto-save
 ```
 
 ---
