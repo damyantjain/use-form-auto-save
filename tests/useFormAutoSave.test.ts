@@ -633,4 +633,19 @@ describe("useFormAutoSave Hook", () => {
       // Since maxRetries default is 3, auto-save is not paused yet.
       expect(result.current.isAutoSavePaused).toBe(false);
   });
+  it('should warn if neither formData nor control is provided', () => {
+    const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+    renderHook(() =>
+      useFormAutoSave({
+        formKey: 'testForm',
+      } as any)
+    );
+
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      '[useFormAutoSave] You must provide either "formData" (manual) or "control" (React Hook Form). Auto-save will not run.'
+    );
+
+    consoleWarnSpy.mockRestore();
+  });
 });

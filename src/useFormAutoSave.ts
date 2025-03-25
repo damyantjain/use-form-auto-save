@@ -98,6 +98,12 @@ export const useFormAutoSave = (config: AutoSaveConfig) => {
     debug = false,
   } = config;
 
+  if (!('formData' in config) && !('control' in config)) {
+    console.warn(
+      '[useFormAutoSave] You must provide either "formData" (manual) or "control" (React Hook Form). Auto-save will not run.'
+    );
+  }
+
   const watchedFormState = config.control
     ? useWatch({ control: config.control })
     : config.formData;
