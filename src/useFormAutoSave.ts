@@ -170,9 +170,21 @@ export const useFormAutoSave = (config: AutoSaveConfig) => {
           logDebug('Saving data via API:', watchedFormState);
           await saveFunction(watchedFormState);
         } else {
-          const storage = storageType === 'localStorage' ? localStorage : sessionStorage;
-          logDebug(`Saving data to ${storageType}:`, watchedFormState);
-          storage.setItem(formKey, JSON.stringify(watchedFormState));
+          try {
+            const storage = storageType === 'localStorage' ? localStorage : sessionStorage;
+            logDebug(`Saving data to ${storageType}:`, watchedFormState);
+            storage.setItem(formKey, JSON.stringify(watchedFormState));
+          } catch (storageError) {
+            logDebug('Storage save failed:', storageError);
+            if (onError) onError(storageError);
+            if (retryCount < maxRetries) {
+              setShouldRetry(true);
+            } else {
+              setIsAutoSavePaused(true);
+            }
+            return;
+          }
+          
         }
 
         setLastSavedData(watchedFormState);

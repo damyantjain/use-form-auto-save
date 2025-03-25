@@ -648,4 +648,33 @@ describe("useFormAutoSave Hook", () => {
 
     consoleWarnSpy.mockRestore();
   });
+  it('should handle storage save failure gracefully', async () => {
+    const setItemMock = jest
+      .spyOn(Storage.prototype, 'setItem')
+      .mockImplementation(() => {
+        throw new Error('QuotaExceededError');
+      });
+
+    const onError = jest.fn();
+
+    const formData = { name: 'John' };
+
+    renderHook(() =>
+      useFormAutoSave({
+        formKey: 'testForm',
+        formData,
+        onError,
+        debounceTime: 1000,
+      })
+    );
+
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    await Promise.resolve();
+
+    expect(onError).toHaveBeenCalledWith(expect.any(Error));
+    setItemMock.mockRestore();
+  });
 });
