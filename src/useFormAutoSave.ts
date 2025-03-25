@@ -58,8 +58,6 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useWatch, Control } from 'react-hook-form';
 import isEqual from 'lodash.isequal';
 
-
-// Types
 export type StorageType = 'localStorage' | 'sessionStorage' | 'api';
 export type SaveFunction = (formData: object) => Promise<void>;
 export type ErrorCallback = (error: any) => void;
@@ -133,80 +131,89 @@ export const useFormAutoSave = (config: AutoSaveConfig) => {
     setShouldRetry(false);
   }, [logDebug]);
 
-  useEffect(() => {
-    logDebug('Effect triggered with state:', { watchedFormState, isAutoSavePaused });
-
+  const shouldSkipAutoSave = () => {
     if (!watchedFormState || !formKey || isAutoSavePaused) {
-      logDebug('Auto-save skipped due to missing form state, form key, or auto-save being paused.');
-      return;
+      logDebug('Auto-save skipped: missing form state/key or paused.');
+      return true;
     }
 
     if (Object.keys(watchedFormState).length === 0) {
-      logDebug('Auto-save skipped due to empty form state.');
-      return;
+      logDebug('Auto-save skipped: empty form state.');
+      return true;
     }
 
     if (!hasMounted.current) {
       hasMounted.current = true;
       if (skipInitialSave) {
-        logDebug('Initial auto-save skipped due to skipInitialSave=true.');
-        return;
+        logDebug('Auto-save skipped: initial save skipped.');
+        return true;
       }
     }
 
     if (lastSavedData && isEqual(lastSavedData, watchedFormState)) {
-      logDebug('Auto-save skipped as data is unchanged.');
-      return;
+      logDebug('Auto-save skipped: data unchanged.');
+      return true;
     }
-    
 
-    const handler = setTimeout(async () => {
-      logDebug(`Initiating auto-save for formKey: ${formKey}`);
-      try {
-        setIsSaving(true);
-        setIsSaveSuccessful(false);
+    return false;
+  };
 
-        if (storageType === 'api' && saveFunction) {
-          logDebug('Saving data via API:', watchedFormState);
-          await saveFunction(watchedFormState);
-        } else {
-          try {
-            const storage = storageType === 'localStorage' ? localStorage : sessionStorage;
-            logDebug(`Saving data to ${storageType}:`, watchedFormState);
-            storage.setItem(formKey, JSON.stringify(watchedFormState));
-          } catch (storageError) {
-            logDebug('Storage save failed:', storageError);
-            if (onError) onError(storageError);
-            if (retryCount < maxRetries) {
-              setShouldRetry(true);
-            } else {
-              setIsAutoSavePaused(true);
-            }
-            return;
+  const performSave = async () => {
+    logDebug(`Initiating auto-save for formKey: ${formKey}`);
+
+    try {
+      setIsSaving(true);
+      setIsSaveSuccessful(false);
+
+      if (storageType === 'api' && saveFunction) {
+        logDebug('Saving via API:', watchedFormState);
+        await saveFunction(watchedFormState);
+      } else {
+        try {
+          const storage = storageType === 'localStorage' ? localStorage : sessionStorage;
+          logDebug(`Saving to ${storageType}:`, watchedFormState);
+          storage.setItem(formKey, JSON.stringify(watchedFormState));
+        } catch (storageError) {
+          logDebug('Storage save failed:', storageError);
+          if (onError) onError(storageError);
+          if (retryCount < maxRetries) {
+            setShouldRetry(true);
+          } else {
+            setIsAutoSavePaused(true);
           }
-          
+          return;
         }
-
-        setLastSavedData(watchedFormState);
-        setRetryCount(0);
-        setIsSaveSuccessful(true);
-        setShouldRetry(false);
-        logDebug('Auto-save successful.');
-      } catch (error) {
-        logDebug('Auto-save encountered an error:', error);
-        if (onError) onError(error);
-
-        if (retryCount < maxRetries) {
-          logDebug(`Retry attempt #${retryCount + 1} scheduled.`);
-          setShouldRetry(true);
-        } else {
-          setIsAutoSavePaused(true);
-          logDebug(`Auto-save paused after ${maxRetries} retries.`);
-        }
-      } finally {
-        setIsSaving(false);
-        logDebug('Auto-save operation completed.');
       }
+
+      setLastSavedData(watchedFormState);
+      setRetryCount(0);
+      setIsSaveSuccessful(true);
+      setShouldRetry(false);
+      logDebug('Auto-save successful.');
+    } catch (error) {
+      logDebug('Auto-save encountered an error:', error);
+      if (onError) onError(error);
+
+      if (retryCount < maxRetries) {
+        logDebug(`Retry attempt #${retryCount + 1} scheduled.`);
+        setShouldRetry(true);
+      } else {
+        setIsAutoSavePaused(true);
+        logDebug(`Auto-save paused after ${maxRetries} retries.`);
+      }
+    } finally {
+      setIsSaving(false);
+      logDebug('Auto-save operation completed.');
+    }
+  };
+
+  useEffect(() => {
+    logDebug('Effect triggered.');
+
+    if (shouldSkipAutoSave()) return;
+
+    const handler = setTimeout(() => {
+      performSave();
     }, debounceTime);
 
     return () => clearTimeout(handler);
