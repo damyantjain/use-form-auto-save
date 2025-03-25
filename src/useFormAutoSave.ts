@@ -114,6 +114,7 @@ export const useFormAutoSave = (config: AutoSaveConfig) => {
   const [isSaveSuccessful, setIsSaveSuccessful] = useState<boolean>(false);
   const [retryCount, setRetryCount] = useState<number>(0);
   const [isAutoSavePaused, setIsAutoSavePaused] = useState<boolean>(false);
+  const [shouldRetry, setShouldRetry] = useState<boolean>(false);
 
   const hasMounted = useRef(false);
 
@@ -121,6 +122,7 @@ export const useFormAutoSave = (config: AutoSaveConfig) => {
     logDebug('Manually resuming auto-save.');
     setRetryCount(0);
     setIsAutoSavePaused(false);
+    setShouldRetry(false);
   }, [logDebug]);
 
   useEffect(() => {
@@ -167,15 +169,15 @@ export const useFormAutoSave = (config: AutoSaveConfig) => {
         setLastSavedData(watchedFormState);
         setRetryCount(0);
         setIsSaveSuccessful(true);
+        setShouldRetry(false);
         logDebug('Auto-save successful.');
       } catch (error) {
         logDebug('Auto-save encountered an error:', error);
         if (onError) onError(error);
 
         if (retryCount < maxRetries) {
-          const retryDelay = Math.pow(2, retryCount) * 1000;
-          logDebug(`Scheduling retry #${retryCount + 1} in ${retryDelay} ms.`);
-          setTimeout(() => setRetryCount(retryCount + 1), retryDelay);
+          logDebug(`Retry attempt #${retryCount + 1} scheduled.`);
+          setShouldRetry(true);
         } else {
           setIsAutoSavePaused(true);
           logDebug(`Auto-save paused after ${maxRetries} retries.`);
@@ -201,6 +203,20 @@ export const useFormAutoSave = (config: AutoSaveConfig) => {
     logDebug,
   ]);
 
+  useEffect(() => {
+    if (!shouldRetry || retryCount >= maxRetries) return;
+
+    const retryDelay = Math.pow(2, retryCount) * 1000;
+    logDebug(`Retrying auto-save in ${retryDelay}ms...`);
+
+    const timer = setTimeout(() => {
+      setShouldRetry(false);
+      setRetryCount((prev) => prev + 1);
+    }, retryDelay);
+
+    return () => clearTimeout(timer);
+  }, [shouldRetry, retryCount, maxRetries, logDebug]);
+
   const restoreFormData = () => {
     if (storageType === 'api') {
       logDebug('Restore functionality is unavailable for API storage.');
@@ -213,5 +229,12 @@ export const useFormAutoSave = (config: AutoSaveConfig) => {
     return savedData ? JSON.parse(savedData) : null;
   };
 
-  return { restoreFormData, isSaving, isSaveSuccessful, isAutoSavePaused, resumeAutoSave, setLastSavedData };
+  return {
+    restoreFormData,
+    isSaving,
+    isSaveSuccessful,
+    isAutoSavePaused,
+    resumeAutoSave,
+    setLastSavedData,
+  };
 };
