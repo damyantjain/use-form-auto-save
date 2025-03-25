@@ -56,6 +56,8 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useWatch, Control } from 'react-hook-form';
+import isEqual from 'lodash.isequal';
+
 
 // Types
 export type StorageType = 'localStorage' | 'sessionStorage' | 'api';
@@ -146,10 +148,11 @@ export const useFormAutoSave = (config: AutoSaveConfig) => {
       }
     }
 
-    if (lastSavedData && JSON.stringify(lastSavedData) === JSON.stringify(watchedFormState)) {
+    if (lastSavedData && isEqual(lastSavedData, watchedFormState)) {
       logDebug('Auto-save skipped as data is unchanged.');
       return;
     }
+    
 
     const handler = setTimeout(async () => {
       logDebug(`Initiating auto-save for formKey: ${formKey}`);
