@@ -53,36 +53,13 @@
  * @author Damyant Jain (https://github.com/damyantjain)
  * @license MIT
  */
-
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { useWatch, Control } from 'react-hook-form';
+import { useWatch } from 'react-hook-form';
 import isEqual from 'lodash.isequal';
+import { useSaveHandler } from './useSaveHandler';
+import { AutoSaveConfig } from './types';
+import { useRetryHandler } from './useRetryHandler';
 
-export type StorageType = 'localStorage' | 'sessionStorage' | 'api';
-export type SaveFunction = (formData: object) => Promise<void>;
-export type ErrorCallback = (error: any) => void;
-
-export type AutoSaveConfig =
-  | ({
-      formData: object;
-      control?: never;
-      skipInitialSave?: boolean;
-    } & BaseConfig)
-  | ({
-      formData?: never;
-      control: Control<any>;
-      skipInitialSave?: boolean;
-    } & BaseConfig);
-
-export type BaseConfig = {
-  formKey: string;
-  debounceTime?: number;
-  storageType?: StorageType;
-  saveFunction?: SaveFunction;
-  onError?: ErrorCallback;
-  maxRetries?: number;
-  debug?: boolean;
-};
 
 export const useFormAutoSave = (config: AutoSaveConfig) => {
   const {
@@ -158,54 +135,21 @@ export const useFormAutoSave = (config: AutoSaveConfig) => {
     return false;
   };
 
-  const performSave = async () => {
-    logDebug(`Initiating auto-save for formKey: ${formKey}`);
-
-    try {
-      setIsSaving(true);
-      setIsSaveSuccessful(false);
-
-      if (storageType === 'api' && saveFunction) {
-        logDebug('Saving via API:', watchedFormState);
-        await saveFunction(watchedFormState);
-      } else {
-        try {
-          const storage = storageType === 'localStorage' ? localStorage : sessionStorage;
-          logDebug(`Saving to ${storageType}:`, watchedFormState);
-          storage.setItem(formKey, JSON.stringify(watchedFormState));
-        } catch (storageError) {
-          logDebug('Storage save failed:', storageError);
-          if (onError) onError(storageError);
-          if (retryCount < maxRetries) {
-            setShouldRetry(true);
-          } else {
-            setIsAutoSavePaused(true);
-          }
-          return;
-        }
-      }
-
-      setLastSavedData(watchedFormState);
-      setRetryCount(0);
-      setIsSaveSuccessful(true);
-      setShouldRetry(false);
-      logDebug('Auto-save successful.');
-    } catch (error) {
-      logDebug('Auto-save encountered an error:', error);
-      if (onError) onError(error);
-
-      if (retryCount < maxRetries) {
-        logDebug(`Retry attempt #${retryCount + 1} scheduled.`);
-        setShouldRetry(true);
-      } else {
-        setIsAutoSavePaused(true);
-        logDebug(`Auto-save paused after ${maxRetries} retries.`);
-      }
-    } finally {
-      setIsSaving(false);
-      logDebug('Auto-save operation completed.');
-    }
-  };
+  const { performSave } = useSaveHandler({
+    formKey,
+    storageType,
+    saveFunction,
+    onError,
+    maxRetries,
+    logDebug,
+    retryCount,
+    setRetryCount,
+    setShouldRetry,
+    setIsAutoSavePaused,
+    setIsSaving,
+    setIsSaveSuccessful,
+    setLastSavedData,
+  });
 
   useEffect(() => {
     logDebug('Effect triggered.');
@@ -213,7 +157,7 @@ export const useFormAutoSave = (config: AutoSaveConfig) => {
     if (shouldSkipAutoSave()) return;
 
     const handler = setTimeout(() => {
-      performSave();
+      performSave(watchedFormState);
     }, debounceTime);
 
     return () => clearTimeout(handler);
@@ -229,22 +173,20 @@ export const useFormAutoSave = (config: AutoSaveConfig) => {
     skipInitialSave,
     lastSavedData,
     logDebug,
+    performSave,
   ]);
 
-  useEffect(() => {
-    if (!shouldRetry || retryCount >= maxRetries) return;
-
-    const retryDelay = Math.pow(2, retryCount) * 1000;
-    logDebug(`Retrying auto-save in ${retryDelay}ms...`);
-
-    const timer = setTimeout(() => {
+  useRetryHandler({
+    shouldRetry,
+    retryCount,
+    maxRetries,
+    logDebug,
+    onRetry: () => {
       setShouldRetry(false);
       setRetryCount((prev) => prev + 1);
-    }, retryDelay);
-
-    return () => clearTimeout(timer);
-  }, [shouldRetry, retryCount, maxRetries, logDebug]);
-
+    },
+  });
+  
   const restoreFormData = () => {
     if (storageType === 'api') {
       logDebug('Restore functionality is unavailable for API storage.');
