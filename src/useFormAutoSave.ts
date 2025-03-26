@@ -53,36 +53,13 @@
  * @author Damyant Jain (https://github.com/damyantjain)
  * @license MIT
  */
-
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { useWatch, Control } from 'react-hook-form';
+import { useWatch } from 'react-hook-form';
+import isEqual from 'lodash.isequal';
+import { useSaveHandler } from './useSaveHandler';
+import { AutoSaveConfig } from './types';
+import { useRetryHandler } from './useRetryHandler';
 
-// Types
-export type StorageType = 'localStorage' | 'sessionStorage' | 'api';
-export type SaveFunction = (formData: object) => Promise<void>;
-export type ErrorCallback = (error: any) => void;
-
-export type AutoSaveConfig =
-  | ({
-      formData: object;
-      control?: never;
-      skipInitialSave?: boolean;
-    } & BaseConfig)
-  | ({
-      formData?: never;
-      control: Control<any>;
-      skipInitialSave?: boolean;
-    } & BaseConfig);
-
-export type BaseConfig = {
-  formKey: string;
-  debounceTime?: number;
-  storageType?: StorageType;
-  saveFunction?: SaveFunction;
-  onError?: ErrorCallback;
-  maxRetries?: number;
-  debug?: boolean;
-};
 
 export const useFormAutoSave = (config: AutoSaveConfig) => {
   const {
@@ -95,6 +72,12 @@ export const useFormAutoSave = (config: AutoSaveConfig) => {
     skipInitialSave = false,
     debug = false,
   } = config;
+
+  if (!('formData' in config) && !('control' in config)) {
+    console.warn(
+      '[useFormAutoSave] You must provide either "formData" (manual) or "control" (React Hook Form). Auto-save will not run.'
+    );
+  }
 
   const watchedFormState = config.control
     ? useWatch({ control: config.control })
@@ -114,6 +97,7 @@ export const useFormAutoSave = (config: AutoSaveConfig) => {
   const [isSaveSuccessful, setIsSaveSuccessful] = useState<boolean>(false);
   const [retryCount, setRetryCount] = useState<number>(0);
   const [isAutoSavePaused, setIsAutoSavePaused] = useState<boolean>(false);
+  const [shouldRetry, setShouldRetry] = useState<boolean>(false);
 
   const hasMounted = useRef(false);
 
@@ -121,69 +105,59 @@ export const useFormAutoSave = (config: AutoSaveConfig) => {
     logDebug('Manually resuming auto-save.');
     setRetryCount(0);
     setIsAutoSavePaused(false);
+    setShouldRetry(false);
   }, [logDebug]);
 
-  useEffect(() => {
-    logDebug('Effect triggered with state:', { watchedFormState, isAutoSavePaused });
-
+  const shouldSkipAutoSave = () => {
     if (!watchedFormState || !formKey || isAutoSavePaused) {
-      logDebug('Auto-save skipped due to missing form state, form key, or auto-save being paused.');
-      return;
+      logDebug('Auto-save skipped: missing form state/key or paused.');
+      return true;
     }
 
     if (Object.keys(watchedFormState).length === 0) {
-      logDebug('Auto-save skipped due to empty form state.');
-      return;
+      logDebug('Auto-save skipped: empty form state.');
+      return true;
     }
 
     if (!hasMounted.current) {
       hasMounted.current = true;
       if (skipInitialSave) {
-        logDebug('Initial auto-save skipped due to skipInitialSave=true.');
-        return;
+        logDebug('Auto-save skipped: initial save skipped.');
+        return true;
       }
     }
 
-    if (lastSavedData && JSON.stringify(lastSavedData) === JSON.stringify(watchedFormState)) {
-      logDebug('Auto-save skipped as data is unchanged.');
-      return;
+    if (lastSavedData && isEqual(lastSavedData, watchedFormState)) {
+      logDebug('Auto-save skipped: data unchanged.');
+      return true;
     }
 
-    const handler = setTimeout(async () => {
-      logDebug(`Initiating auto-save for formKey: ${formKey}`);
-      try {
-        setIsSaving(true);
-        setIsSaveSuccessful(false);
+    return false;
+  };
 
-        if (storageType === 'api' && saveFunction) {
-          logDebug('Saving data via API:', watchedFormState);
-          await saveFunction(watchedFormState);
-        } else {
-          const storage = storageType === 'localStorage' ? localStorage : sessionStorage;
-          logDebug(`Saving data to ${storageType}:`, watchedFormState);
-          storage.setItem(formKey, JSON.stringify(watchedFormState));
-        }
+  const { performSave } = useSaveHandler({
+    formKey,
+    storageType,
+    saveFunction,
+    onError,
+    maxRetries,
+    logDebug,
+    retryCount,
+    setRetryCount,
+    setShouldRetry,
+    setIsAutoSavePaused,
+    setIsSaving,
+    setIsSaveSuccessful,
+    setLastSavedData,
+  });
 
-        setLastSavedData(watchedFormState);
-        setRetryCount(0);
-        setIsSaveSuccessful(true);
-        logDebug('Auto-save successful.');
-      } catch (error) {
-        logDebug('Auto-save encountered an error:', error);
-        if (onError) onError(error);
+  useEffect(() => {
+    logDebug('Effect triggered.');
 
-        if (retryCount < maxRetries) {
-          const retryDelay = Math.pow(2, retryCount) * 1000;
-          logDebug(`Scheduling retry #${retryCount + 1} in ${retryDelay} ms.`);
-          setTimeout(() => setRetryCount(retryCount + 1), retryDelay);
-        } else {
-          setIsAutoSavePaused(true);
-          logDebug(`Auto-save paused after ${maxRetries} retries.`);
-        }
-      } finally {
-        setIsSaving(false);
-        logDebug('Auto-save operation completed.');
-      }
+    if (shouldSkipAutoSave()) return;
+
+    const handler = setTimeout(() => {
+      performSave(watchedFormState);
     }, debounceTime);
 
     return () => clearTimeout(handler);
@@ -199,8 +173,20 @@ export const useFormAutoSave = (config: AutoSaveConfig) => {
     skipInitialSave,
     lastSavedData,
     logDebug,
+    performSave,
   ]);
 
+  useRetryHandler({
+    shouldRetry,
+    retryCount,
+    maxRetries,
+    logDebug,
+    onRetry: () => {
+      setShouldRetry(false);
+      setRetryCount((prev) => prev + 1);
+    },
+  });
+  
   const restoreFormData = () => {
     if (storageType === 'api') {
       logDebug('Restore functionality is unavailable for API storage.');
@@ -213,5 +199,12 @@ export const useFormAutoSave = (config: AutoSaveConfig) => {
     return savedData ? JSON.parse(savedData) : null;
   };
 
-  return { restoreFormData, isSaving, isSaveSuccessful, isAutoSavePaused, resumeAutoSave, setLastSavedData };
+  return {
+    restoreFormData,
+    isSaving,
+    isSaveSuccessful,
+    isAutoSavePaused,
+    resumeAutoSave,
+    setLastSavedData,
+  };
 };
