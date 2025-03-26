@@ -1,6 +1,7 @@
 # useFormAutoSave
 
 [![npm](https://img.shields.io/npm/v/use-form-auto-save)](https://www.npmjs.com/package/use-form-auto-save)
+[![License](https://img.shields.io/npm/l/use-form-auto-save.svg)](https://github.com/damyantjain/use-form-auto-save/blob/master/LICENSE)
 
 > A custom React hook to automatically save form data seamlessly to localStorage, sessionStorage, or an external API, featuring debouncing, error handling, retry mechanisms, and restoration capabilities. It also integrates smoothly with React Hook Form.
 
