@@ -1,6 +1,6 @@
 {
   "name": "use-form-auto-save",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "A customizable React hook for automatically saving and restoring form data with support for localStorage, sessionStorage, and external APIs.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
