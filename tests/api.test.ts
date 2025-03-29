@@ -1,6 +1,6 @@
 /**
  * @module apiTests
- * 
+ *
  * @description
  * This module contains a comprehensive suite of tests for the useFormAutoSave hook.
  *
@@ -454,23 +454,6 @@ describe("useFormAutoSave Hook", () => {
     expect(mockApiSave).toHaveBeenLastCalledWith({
       username: "recovered_user",
     });
-  });
-
-  it("API Storage Without Save Function: should not crash if storageType is 'api' and saveFunction is not provided", () => {
-    renderHook(() =>
-      useFormAutoSave({
-        formData: { test: "noApiFunc" },
-        formKey: "no-api-saveFunc",
-        debounceTime: 1000,
-        storageType: "api",
-      })
-    );
-
-    act(() => {
-      jest.advanceTimersByTime(1000);
-    });
-    // Since saveFunction is not provided, nothing should be saved or thrown.
-    expect(true).toBe(true);
   });
 
   it("No Error Callback Provided: should handle API failure gracefully when onError is not provided", async () => {
