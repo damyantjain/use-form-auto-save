@@ -59,6 +59,7 @@ import isEqual from 'lodash.isequal';
 import { useSaveHandler } from './useSaveHandler';
 import { AutoSaveConfig } from './types';
 import { useRetryHandler } from './useRetryHandler';
+import { validateConfig } from './validateConfig';
 
 
 export const useFormAutoSave = (config: AutoSaveConfig) => {
@@ -73,11 +74,7 @@ export const useFormAutoSave = (config: AutoSaveConfig) => {
     debug = false,
   } = config;
 
-  if (!('formData' in config) && !('control' in config)) {
-    console.warn(
-      '[useFormAutoSave] You must provide either "formData" (manual) or "control" (React Hook Form). Auto-save will not run.'
-    );
-  }
+  validateConfig(config);
 
   const watchedFormState = config.control
     ? useWatch({ control: config.control })
@@ -186,7 +183,7 @@ export const useFormAutoSave = (config: AutoSaveConfig) => {
       setRetryCount((prev) => prev + 1);
     },
   });
-  
+
   const restoreFormData = () => {
     if (storageType === 'api') {
       logDebug('Restore functionality is unavailable for API storage.');
