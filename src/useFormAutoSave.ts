@@ -1,4 +1,21 @@
 /**
+ * This file contains the `useFormAutoSave` hook, a custom React hook for automatically saving form data.
+ * It supports localStorage, sessionStorage, and API-based saving with features like debouncing, retries, and error handling.
+ *
+ * Related utilities:
+ * - `useSaveHandler`: Handles the save logic.
+ * - `useRetryHandler`: Manages retry logic for failed saves.
+ */
+
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { useWatch } from 'react-hook-form';
+import isEqual from 'lodash.isequal';
+import { useSaveHandler } from './useSaveHandler';
+import { AutoSaveConfig } from './types';
+import { useRetryHandler } from './useRetryHandler';
+import { validateConfig } from './validateConfig';
+
+/**
  * useFormAutoSave - Custom React Hook for automatically saving form data.
  *
  * This hook provides an efficient and customizable solution to automatically save form data
@@ -24,7 +41,7 @@
  *   - isSaving: Indicates if auto-save is currently in progress.
  *   - isSaveSuccessful: Indicates if the last auto-save operation was successful.
  *   - isAutoSavePaused: Indicates if auto-save is paused due to consecutive errors.
- *   - setLastSavedData: Function to manually update the internally tracked last saved data.
+ *   - setLastSavedData: Function to manually update the internally tracked last saved data. Useful for syncing the last saved state manually.
  *
  * @example
  * // Basic usage with localStorage
@@ -50,18 +67,16 @@
  * - `restoreFormData` is not available when using 'api' storage type.
  * - The hook automatically pauses auto-save after exhausting retries; use `resumeAutoSave` to restart.
  *
+ * - Auto-save is skipped under the following conditions:
+ * - watchedFormState or formKey is missing.
+ * - Auto-save is paused due to consecutive errors.
+ * - The form state is empty.
+ * - The initial save is skipped (skipInitialSave is true).
+ * - The form data has not changed since the last save.
+ *
  * @author Damyant Jain (https://github.com/damyantjain)
  * @license MIT
  */
-import { useEffect, useState, useCallback, useRef } from 'react';
-import { useWatch } from 'react-hook-form';
-import isEqual from 'lodash.isequal';
-import { useSaveHandler } from './useSaveHandler';
-import { AutoSaveConfig } from './types';
-import { useRetryHandler } from './useRetryHandler';
-import { validateConfig } from './validateConfig';
-
-
 export const useFormAutoSave = (config: AutoSaveConfig) => {
   const {
     formKey,
@@ -187,7 +202,6 @@ export const useFormAutoSave = (config: AutoSaveConfig) => {
   const restoreFormData = () => {
     if (storageType === 'api') {
       logDebug('Restore functionality is unavailable for API storage.');
-      console.warn('Restore functionality is not available for API storage.');
       return null;
     }
     const storage = storageType === 'localStorage' ? localStorage : sessionStorage;
