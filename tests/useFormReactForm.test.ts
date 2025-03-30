@@ -1,14 +1,19 @@
 import { renderHook, act } from "@testing-library/react";
 import { useForm } from "react-hook-form";
 import { useFormAutoSave } from "../src/useFormAutoSave";
+import { useSaveHandler } from '../src/useSaveHandler';
 
 describe("useFormAutoSave (React Hook Form)", () => {
+  let consoleLogSpy: jest.SpyInstance;
+
   beforeEach(() => {
+    consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
     sessionStorage.clear();
     jest.useFakeTimers();
   });
 
   afterEach(() => {
+    consoleLogSpy.mockRestore();
     jest.runOnlyPendingTimers();
     jest.useRealTimers();
   });
@@ -101,7 +106,7 @@ describe("useFormAutoSave (React Hook Form)", () => {
 
   it("should restore and set last saved data on mount", () => {
     sessionStorage.setItem("rhf-save-test", JSON.stringify({ name: "Bob", email: "bob@example.com" }));
-  
+
     const { result } = renderHook(() => {
       const { control, reset } = useForm({ defaultValues: { name: "", email: "" } });
       const hook = useFormAutoSave({
@@ -111,10 +116,10 @@ describe("useFormAutoSave (React Hook Form)", () => {
         storageType: "sessionStorage",
         skipInitialSave: true,
       });
-  
+
       return { control, reset, ...hook };
     });
-  
+
     act(() => {
       const saved = result.current.restoreFormData();
       if (saved) {
@@ -122,13 +127,34 @@ describe("useFormAutoSave (React Hook Form)", () => {
         result.current.setLastSavedData(saved);
       }
     });
-  
+
     expect(result.current.restoreFormData()).toEqual({ name: "Bob", email: "bob@example.com" });
   });
 
+  it('logs messages when debug is true', () => {
+    const { result: formResult } = renderHook(() => useForm({ defaultValues: { name: '' } }));
+    const mockSaveFunction = jest.fn();
+
+    const { result } = renderHook(() =>
+      useFormAutoSave({
+        control: formResult.current.control,
+        formKey: 'testForm',
+        debug: true,
+        debounceTime: 1000,
+        storageType: 'api',
+        saveFunction: mockSaveFunction,
+      })
+    );
+
+    result.current.restoreFormData();
+
+    expect(consoleLogSpy).toHaveBeenCalledWith(
+      '[useFormAutoSave]',
+      'Restore functionality is unavailable for API storage.'
+    );
+  });
 
   it("Using React Hook Form Control: should react to control value changes", () => {
-    // Set up a minimal form using react-hook-form
     const { result: formResult } = renderHook(() => {
         const { control, setValue } = useForm({ defaultValues: { username: "initial_user" } });
         return { control, setValue };
@@ -144,24 +170,92 @@ describe("useFormAutoSave (React Hook Form)", () => {
         { initialProps: { ctrl: formResult.current.control } }
     );
 
-    // Initially, waiting for timer
-    act(() => { 
+    act(() => {
       jest.advanceTimersByTime(1000);
     });
-    // Data from control should be saved
     expect(localStorage.getItem("control-test")).toBe(JSON.stringify({ username: "initial_user" }));
 
-    // Simulate a value change by updating the control via setValue
     act(() => {
         formResult.current.setValue("username", "updated_user");
     });
 
-    // Rerender manually to trigger watch updates
     rerender({ ctrl: formResult.current.control });
     act(() => {
       jest.advanceTimersByTime(1000);
     });
     expect(localStorage.getItem("control-test")).toBe(JSON.stringify({ username: "updated_user" }));
-});
-  
+  });
+
+  it('pauses auto-save after exceeding maxRetries', async () => {
+    const mockLogDebug = jest.fn();
+    const mockSetIsAutoSavePaused = jest.fn();
+    const mockSetShouldRetry = jest.fn();
+    const mockSetRetryCount = jest.fn();
+    const mockOnError = jest.fn();
+
+    const { result } = renderHook(() =>
+      useSaveHandler({
+        formKey: 'testForm',
+        storageType: 'api',
+        saveFunction: jest.fn().mockRejectedValue(new Error('Save failed')),
+        onError: mockOnError,
+        maxRetries: 3,
+        logDebug: mockLogDebug,
+        retryCount: 3,
+        setRetryCount: mockSetRetryCount,
+        setShouldRetry: mockSetShouldRetry,
+        setIsAutoSavePaused: mockSetIsAutoSavePaused,
+        setIsSaving: jest.fn(),
+        setIsSaveSuccessful: jest.fn(),
+        setLastSavedData: jest.fn(),
+      })
+    );
+
+    await act(async () => {
+      await result.current.performSave({ test: 'data' });
+    });
+
+    expect(mockSetIsAutoSavePaused).toHaveBeenCalledWith(true);
+    expect(mockLogDebug).toHaveBeenCalledWith('Auto-save paused after 3 retries.');
+  });
+
+  it('pauses auto-save after exceeding maxRetries for local/session storage', async () => {
+    const mockLogDebug = jest.fn();
+    const mockSetIsAutoSavePaused = jest.fn();
+    const mockSetShouldRetry = jest.fn();
+    const mockSetRetryCount = jest.fn();
+    const mockOnError = jest.fn();
+
+    const mockStorage = {
+      setItem: jest.fn(() => {
+        throw new Error('Storage failed');
+      }),
+    };
+    Object.defineProperty(global, 'localStorage', { value: mockStorage });
+
+    const { result } = renderHook(() =>
+      useSaveHandler({
+        formKey: 'testForm',
+        storageType: 'localStorage',
+        maxRetries: 3,
+        retryCount: 3,
+        logDebug: mockLogDebug,
+        setRetryCount: mockSetRetryCount,
+        setShouldRetry: mockSetShouldRetry,
+        setIsAutoSavePaused: mockSetIsAutoSavePaused,
+        setIsSaving: jest.fn(),
+        setIsSaveSuccessful: jest.fn(),
+        setLastSavedData: jest.fn(),
+        onError: mockOnError,
+      })
+    );
+
+    await act(async () => {
+      await result.current.performSave({ test: 'data' });
+    });
+
+    expect(mockSetIsAutoSavePaused).toHaveBeenCalledWith(true);
+
+    expect(mockLogDebug).toHaveBeenCalledWith('Storage save failed:', expect.any(Error));
+  });
 });
